@@ -77,17 +77,17 @@ static int _evdev_calibrate(int v, int in_min, int in_max, int out_min, int out_
     return LV_CLAMP(out_min, v, out_max);
 }
 
-static lv_point_t _evdev_process_pointer(lv_indev_drv_t * drv, int x, int y)
+static lv_point_t _evdev_process_pointer(lv_indev_t * drv, int x, int y)
 {
-    evdev_device_t * dsc = drv->user_data ? drv->user_data : &global_dsc;
+    evdev_device_t * dsc = lv_indev_get_user_data(drv) ? lv_indev_get_user_data(drv) : &global_dsc;
 
     int swapped_x = dsc->swap_axes ? y : x;
     int swapped_y = dsc->swap_axes ? x : y;
 
     int offset_x = 0; /*Not lv_disp_get_offset_x(drv->disp) for bc*/
     int offset_y = 0; /*Not lv_disp_get_offset_y(drv->disp) for bc*/
-    int width = lv_disp_get_hor_res(drv->disp);
-    int height = lv_disp_get_ver_res(drv->disp);
+    int width = lv_disp_get_hor_res(lv_indev_get_display(drv));
+    int height = lv_disp_get_ver_res(lv_indev_get_display(drv));
 
     lv_point_t p;
     p.x = _evdev_calibrate(swapped_x, dsc->hor_min, dsc->hor_max, offset_x, offset_x + width - 1);
@@ -170,9 +170,9 @@ void evdev_device_set_calibration(evdev_device_t * dsc, int ver_min, int hor_min
     dsc->hor_max = hor_max;
 }
 
-void evdev_read(lv_indev_drv_t * drv, lv_indev_data_t * data)
+void evdev_read(lv_indev_t * drv, lv_indev_data_t * data)
 {
-    evdev_device_t * dsc = drv->user_data ? drv->user_data : &global_dsc;
+    evdev_device_t * dsc = lv_display_get_user_data(lv_indev_get_display(drv)) ? lv_display_get_user_data(lv_indev_get_display(drv)) : &global_dsc;
     if(dsc->fd < 0) return;
 
     /*Update dsc with buffered events*/
@@ -207,7 +207,7 @@ void evdev_read(lv_indev_drv_t * drv, lv_indev_data_t * data)
     }
 
     /*Process and store in data*/
-    switch(drv->type) {
+    switch(lv_indev_get_type(drv)) {
         case LV_INDEV_TYPE_KEYPAD:
             data->state = dsc->state;
             data->key = dsc->key;

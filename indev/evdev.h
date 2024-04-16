@@ -103,7 +103,7 @@ void evdev_device_set_calibration(evdev_device_t * dsc, int hor_min, int ver_min
  *            device or an evdev_device_t pointer.
  * @param data destination for input events
  */
-void evdev_read(lv_indev_drv_t * drv, lv_indev_data_t * data);
+void evdev_read(lv_indev_t * drv, lv_indev_data_t * data);
 
 #endif /* USE_EVDEV */
 

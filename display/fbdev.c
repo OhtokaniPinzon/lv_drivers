@@ -172,7 +172,7 @@ void fbdev_exit(void)
  * @param area an area where to copy `color_p`
  * @param color_p an array of pixels to copy to the `area` part of the screen
  */
-void fbdev_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_p)
+void fbdev_flush(lv_display_t * drv, const lv_area_t * area, lv_color_t * color_p)
 {
     if(fbp == NULL ||
             area->x2 < 0 ||
@@ -195,6 +195,7 @@ void fbdev_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color
     long int byte_location = 0;
     unsigned char bit_location = 0;
 
+//	lv_draw_sw_rgb565_swap(color_p, area->x1 * area->y1);
     /*32 bit per pixel*/
     if(vinfo.bits_per_pixel == 32) {
         uint32_t * fbp32 = (uint32_t *)fbp;
@@ -253,7 +254,7 @@ void fbdev_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color
                 byte_location = location / 8; /* find the byte we need to change */
                 bit_location = location % 8; /* inside the byte found, find the bit we need to change */
                 fbp8[byte_location] &= ~(((uint8_t)(1)) << bit_location);
-                fbp8[byte_location] |= ((uint8_t)(color_p->full)) << bit_location;
+                //fbp8[byte_location] |= ((uint8_t)(color_p->full)) << bit_location;
                 color_p++;
             }
 
