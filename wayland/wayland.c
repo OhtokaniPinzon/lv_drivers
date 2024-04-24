@@ -2091,8 +2091,6 @@ static void _lv_wayland_flush(lv_display_t *disp, const lv_area_t *area, uint8_t
     int32_t y;
     void *buf_base;
     struct wl_buffer *wl_buf;
-//    lv_coord_t src_width = (area->x2 - area->x1 + 1);
-//    lv_coord_t src_height = (area->y2 - area->y1 + 1);
     int32_t src_width = lv_area_get_width(area);
     int32_t src_height = lv_area_get_height(area);
     uint32_t px_size = lv_color_format_get_size(lv_display_get_color_format(disp));
@@ -2102,26 +2100,6 @@ static void _lv_wayland_flush(lv_display_t *disp, const lv_area_t *area, uint8_t
 
     const lv_coord_t hres = (lv_display_get_rotation(disp) == 0) ? (lv_display_get_horizontal_resolution(disp)) : (lv_display_get_vertical_resolution(disp));
     const lv_coord_t vres = (lv_display_get_rotation(disp) == 0) ? (lv_display_get_vertical_resolution(disp)) : (lv_display_get_horizontal_resolution(disp));
-
-
-    printf("===== Display ===== \r\n");
-    printf("Horizontal resolution = %d\r\n", lv_display_get_horizontal_resolution(disp));
-    printf("Vertical resolution = %d\r\n", lv_display_get_vertical_resolution(disp));
-    printf("Physical H resolution = %d\r\n", lv_display_get_physical_horizontal_resolution(disp));
-    printf("Physical V resolution = %d\r\n", lv_display_get_physical_vertical_resolution(disp));
-    printf("X offset = %d\r\n", lv_display_get_offset_x(disp));
-    printf("Y offset = %d\r\n", lv_display_get_offset_y(disp));
-    printf("DPI = %d\r\n", lv_display_get_dpi(disp));
-    printf("Color Format = %d\r\n", lv_display_get_color_format(disp));
-
-    printf("===== Area ===== \r\n");
-    printf("X1 = %d\r\n", area->x1);
-    printf("X2 = %d\r\n", area->x2);
-    printf("Y1 = %d\r\n", area->y1);
-    printf("Y2 = %d\r\n", area->y2);
-    printf("Width = %d\r\n", src_width);
-    printf("Pixel size = %d\r\n", px_size);
-
 
 
     /* If window has been / is being closed, or is not visible, skip flush */
@@ -2158,14 +2136,10 @@ static void _lv_wayland_flush(lv_display_t *disp, const lv_area_t *area, uint8_t
         goto skip;
     }
 
-    printf("Width = %d\r\n", src_width);
-    printf("Pixel size = %d\r\n", px_size);
     /* Modify specified area in buffer */
     for (y = area->y1; y <= area->y2; y++)
     {
-//        offset = ((area->x1 + (y * lv_display_get_horizontal_resolution(disp))) * BYTES_PER_PIXEL);
 		offset = ((area->x1 + (y * window->body->width)) * px_size);
-//        offset = window->width;
 #if (LV_COLOR_DEPTH == 1)
         for (x = 0; x < src_width; x++)
         {
@@ -2177,10 +2151,7 @@ static void _lv_wayland_flush(lv_display_t *disp, const lv_area_t *area, uint8_t
         }
 #else
         lv_memcpy(((char *)buf_base) + offset, color_p, src_width * px_size);
-        color_p += 5120;
-		printf("Offset = %d\r\n", offset);
-    	printf("color_p = %d\r\n", color_p);
-
+        color_p += src_width * px_size;
 #endif
     }
 
