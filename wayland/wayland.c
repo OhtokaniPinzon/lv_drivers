@@ -64,6 +64,10 @@
 #define LV_WAYLAND_CYCLE_PERIOD LV_MIN(LV_DEF_REFR_PERIOD,1)
 #endif
 
+#ifndef DIV_ROUND_UP
+    #define DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
+#endif
+
 /**********************
  *      TYPEDEFS
  **********************/
@@ -2080,21 +2084,45 @@ static void destroy_window(struct window *window)
     destroy_graphic_obj(window->body);
 }
 
-static void _lv_wayland_flush(lv_display_t *disp, const lv_area_t *area, lv_color_t *color_p)
+static void _lv_wayland_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *color_p)
 {
     unsigned long offset;
     int32_t x;
     int32_t y;
     void *buf_base;
     struct wl_buffer *wl_buf;
-    lv_coord_t src_width = (area->x2 - area->x1 + 1);
-    lv_coord_t src_height = (area->y2 - area->y1 + 1);
+//    lv_coord_t src_width = (area->x2 - area->x1 + 1);
+//    lv_coord_t src_height = (area->y2 - area->y1 + 1);
+    int32_t src_width = lv_area_get_width(area);
+    int32_t src_height = lv_area_get_height(area);
+    uint32_t px_size = lv_color_format_get_size(lv_display_get_color_format(disp));
     struct window *window = lv_display_get_user_data(disp);
     smm_buffer_t *buf = window->body->pending_buffer;
     struct wl_callback *cb;
 
     const lv_coord_t hres = (lv_display_get_rotation(disp) == 0) ? (lv_display_get_horizontal_resolution(disp)) : (lv_display_get_vertical_resolution(disp));
     const lv_coord_t vres = (lv_display_get_rotation(disp) == 0) ? (lv_display_get_vertical_resolution(disp)) : (lv_display_get_horizontal_resolution(disp));
+
+
+    printf("===== Display ===== \r\n");
+    printf("Horizontal resolution = %d\r\n", lv_display_get_horizontal_resolution(disp));
+    printf("Vertical resolution = %d\r\n", lv_display_get_vertical_resolution(disp));
+    printf("Physical H resolution = %d\r\n", lv_display_get_physical_horizontal_resolution(disp));
+    printf("Physical V resolution = %d\r\n", lv_display_get_physical_vertical_resolution(disp));
+    printf("X offset = %d\r\n", lv_display_get_offset_x(disp));
+    printf("Y offset = %d\r\n", lv_display_get_offset_y(disp));
+    printf("DPI = %d\r\n", lv_display_get_dpi(disp));
+    printf("Color Format = %d\r\n", lv_display_get_color_format(disp));
+
+    printf("===== Area ===== \r\n");
+    printf("X1 = %d\r\n", area->x1);
+    printf("X2 = %d\r\n", area->x2);
+    printf("Y1 = %d\r\n", area->y1);
+    printf("Y2 = %d\r\n", area->y2);
+    printf("Width = %d\r\n", src_width);
+    printf("Pixel size = %d\r\n", px_size);
+
+
 
     /* If window has been / is being closed, or is not visible, skip flush */
     if (window->closed || window->shall_close)
@@ -2130,10 +2158,14 @@ static void _lv_wayland_flush(lv_display_t *disp, const lv_area_t *area, lv_colo
         goto skip;
     }
 
+    printf("Width = %d\r\n", src_width);
+    printf("Pixel size = %d\r\n", px_size);
     /* Modify specified area in buffer */
     for (y = area->y1; y <= area->y2; y++)
     {
-        offset = ((area->x1 + (y * lv_display_get_horizontal_resolution(disp))) * BYTES_PER_PIXEL);
+//        offset = ((area->x1 + (y * lv_display_get_horizontal_resolution(disp))) * BYTES_PER_PIXEL);
+		offset = ((area->x1 + (y * window->body->width)) * px_size);
+//        offset = window->width;
 #if (LV_COLOR_DEPTH == 1)
         for (x = 0; x < src_width; x++)
         {
@@ -2144,10 +2176,11 @@ static void _lv_wayland_flush(lv_display_t *disp, const lv_area_t *area, lv_colo
             color_p++;
         }
 #else
-        memcpy(((char *)buf_base) + offset,
-               color_p,
-               src_width * BYTES_PER_PIXEL);
-        color_p += src_width;
+        lv_memcpy(((char *)buf_base) + offset, color_p, src_width * px_size);
+        color_p += 5120;
+		printf("Offset = %d\r\n", offset);
+    	printf("color_p = %d\r\n", color_p);
+
 #endif
     }
 
@@ -2527,8 +2560,15 @@ lv_disp_t * lv_wayland_create_window(lv_coord_t hor_res, lv_coord_t ver_res, cha
         return NULL;
     }
 
+	int32_t width = 261;
+
+    printf("File: %s, Func: %s, Line: %d\r\n", __FILE__, __func__, __LINE__);
+    printf("hor_res = %d\r\n", hor_res);
+    printf("width = %d\r\n", width);
+
   	window->lv_disp = lv_display_create(hor_res, ver_res);
 	lv_display_set_buffers(window->lv_disp, buf1, buf2, hor_res * ver_res * sizeof(lv_color_t) * 8, LV_DISPLAY_RENDER_MODE_FULL);
+	lv_display_set_dpi(window->lv_disp, DIV_ROUND_UP(hor_res * 254, width * 10));
     /* Initialize display driver */
 //    window->lv_disp_drv.draw_buf = &window->lv_disp_draw_buf;
 	lv_display_set_resolution(window->lv_disp, hor_res, ver_res);
